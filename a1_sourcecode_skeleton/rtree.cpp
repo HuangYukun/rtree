@@ -36,6 +36,17 @@ bool RTree::insert(const vector<int>& coordinate, int rid)
 	/***
 	ADD YOUR CODE HERE
 	****/
+
+}
+
+RTNode * RTree::choose_leaf(const vector<int>& coordinate)
+{
+	RTNode *N = this->root;
+	if (N->entry_num<2||(N->entries[0]).get_ptr()==NULL)
+	{
+		return N;
+	}
+
 }
 
 void RTree::query_range(const BoundingBox& mbr, int& result_count, int& node_travelled)
