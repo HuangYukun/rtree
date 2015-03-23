@@ -30,5 +30,5 @@ class RTree {
 		int max_entry_num;
 		int dimension;
 		RTNode* root;
-		RTNode* choose_leaf();
+		RTNode* choose_leaf(const vector<int>& coordinate, RTNode* node);
 };

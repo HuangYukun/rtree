@@ -39,12 +39,44 @@ bool RTree::insert(const vector<int>& coordinate, int rid)
 
 }
 
-RTNode * RTree::choose_leaf(const vector<int>& coordinate)
+//when calling this function we should pass in the root node
+RTNode * RTree::choose_leaf(const vector<int>& coordinate, RTNode* N)//recursive call
 {
-	RTNode *N = this->root;
-	if (N->entry_num<2||(N->entries[0]).get_ptr()==NULL)
+	// RTNode *N = this->root;
+	if (N->entry_num<2||(N->entries[0]).get_ptr()==NULL)//if N is a leaf
 	{
 		return N;
+	}
+	else
+	{
+		vector<int> enlargement;
+		for (int i = 0; i < N->entry_num; i++){
+			BoundingBox bb = BoundingBox((N->entries[i]).get_mbr());
+			BoundingBox box_new = BoundingBox(coordinate,	coordinate);
+			bb.group_with(box_new);
+			enlargement.push_back(bb.get_area() - (N->entries[i]).get_mbr().get_area());
+		}
+		//tie-breaking
+		int min = enlargement.front();
+		vector<int> min_index;
+		for (vector<int>::iterator it = enlargement.begin() ; it != enlargement.end(); ++it){
+			if (*it < min){
+				min_index.clear();
+				min_index.push_back(it - enlargement.begin());
+			}
+			else if(*it == min){
+				min_index.push_back(it - enlargement.begin());
+			}
+		}
+		for (vector<int>::iterator it = min_index.begin()+1 ; it != min_index.end(); ++it){
+			BoundingBox b1 = (N->entries[*(it-1)]).get_mbr();
+			BoundingBox b2 = (N->entries[*it]).get_mbr();
+			if (tie_breaking(b1, b2) == true){
+				min_index[*it] = min_index[*(it-1)];
+			}
+		}
+		//print min_index to debug
+		choose_leaf(coordinate, (N->entries[min_index.back()]).get_ptr());
 	}
 
 }
