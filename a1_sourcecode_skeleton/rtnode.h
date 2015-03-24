@@ -33,6 +33,7 @@ class RTNode {
 	public:
 		int entry_num;
 		Entry* entries;
+		RTNode* parent;
 		int level;
 		int size;
 };

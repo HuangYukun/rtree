@@ -1,5 +1,6 @@
 /* Implementations of R tree */
 #include <cmath>
+#include <algorithm>
 #include "rtree.h"
 
 
@@ -79,6 +80,59 @@ RTNode * RTree::choose_leaf(const vector<int>& coordinate, RTNode* N)//recursive
 		choose_leaf(coordinate, (N->entries[min_index.back()]).get_ptr());
 	}
 
+}
+
+void RTree::adjust_tree(RTNode* L, RTNode* LL)
+{
+	RTNode* N = L;
+	RTNode* NN = LL;
+	//check N is the root
+	if (N->parent==NULL){
+		return;
+	}
+	else
+	{
+		RTNode* P = N->parent;
+		for (int i = 0; i < P->entry_num; i++){
+			if(P->entries[i].get_ptr()==N){
+				for (int j = 0; j < N->entry_num; j++){
+					BoundingBox mbr(P->entries[i].get_mbr());
+					mbr.group_with((N->entries[j]).get_mbr());
+					P->entries[i].set_mbr(mbr);
+				}
+			}
+		}
+		if (NN!=NULL){
+			Entry enn = Entry();
+			enn.set_ptr(NN);
+			BoundingBox bnn = get_mbr(NN->entries, NN->entry_num);
+			enn.set_mbr(bnn);
+			if (P->entry_num < P->size){
+				//add enn to P
+				P->entries[P->entry_num] = enn;
+			}
+			else{
+				//AT4
+				//there will be recursive calls
+			}
+		}
+	}
+}
+
+//linear-cost algorithm
+vector<RTNode*> RTree::split_node(RTNode* node){
+	vector<int> separation;
+	for (int j = 0; j < node->entries[0].get_mbr().get_dim(); j++){
+		vector<int> low_side;
+		vector<int> high_side;
+		for (int i = 0; i < node->entry_num; i++){
+			low_side.push_back(node->entries[i].get_mbr().get_lowestValue_at(j));
+			high_side.push_back(node->entries[i].get_mbr().get_highestValue_at(j));
+		}
+		vector<int>::iterator highest_low_side = max_element(low_side.begin(),low_side.end());
+		vector<int>::iterator lowest_high_side = min_element(high_side.begin(),high_side.end());
+		separation.push_back(abs(*highest_low_side - *lowest_high_side));
+	}
 }
 
 void RTree::query_range(const BoundingBox& mbr, int& result_count, int& node_travelled)
