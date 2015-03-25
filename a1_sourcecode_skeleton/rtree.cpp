@@ -110,10 +110,16 @@ void RTree::adjust_tree(RTNode* L, RTNode* LL)
 			if (P->entry_num < P->size){
 				//add enn to P
 				P->entries[P->entry_num] = enn;
+				P->entry_num++;
 			}
 			else{
 				//AT4
-				//there will be recursive calls
+				//firstly overflow P, then split it
+				P->entries[P->entry_num] = enn;
+				P->entry_num++;
+				vector<RTNode*> Ps = split_node(P);
+				N = Ps.front();
+				NN = Ps.back();
 			}
 		}
 	}
@@ -136,10 +142,37 @@ vector<RTNode*> RTree::split_node(RTNode* node){
 		vector<int>::iterator highest_high_side = max_element(high_side.begin(),high_side.end());
 		separation.push_back(abs(*highest_low_side - *lowest_high_side)/(*highest_high_side - *lowest_low_side));
 	}
-	vector<int>::iterator biggest_standard_separation = max_element(separation.begin(),separation.end());
-	// for (int j = 0; j < node->entries[0].get_mbr().get_dim(); j++){
-	// 	separation[j] /= 
-	// }
+	vector<int>::iterator biggest_normalized_separation = max_element(separation.begin(),separation.end());
+	//back trace to the two entries
+	int dimension_index = biggest_normalized_separation - separation.begin();
+	int highest_low_side = node->entries[0].get_mbr().get_lowestValue_at(dimension_index);
+	int hls_entry_index = 0;
+	int lowest_high_side = node->entries[0].get_mbr().get_highestValue_at(dimension_index);
+	int lhs_entry_index = 0;
+	for (int i = 0; i < node->entry_num; i++){
+		int low_side = node->entries[i].get_mbr().get_lowestValue_at(dimension_index);
+		if (low_side > highest_low_side){
+			highest_low_side = low_side;
+			hls_entry_index = i;
+		}
+		int high_side = node->entries[i].get_mbr().get_highestValue_at(dimension_index);
+		if (high_side < lowest_high_side){
+			lowest_high_side = high_side;
+			lhs_entry_index = i;
+		}
+	}
+	vector<RTNode*> Nodes;
+	//modify constructor
+	RTNode * LL = new RTNode(node->level, node->size);
+	LL->entries[0] = node->entries[lhs_entry_index];
+	LL->entry_num++;
+	for (int i = lhs_entry_index; i < node->size; i++){
+		node->entries[i] = node->entries[i+1];
+	}
+	node->entry_num--;
+	Nodes.push_back(node);
+	Nodes.push_back(LL);
+	return Nodes;
 }
 
 void RTree::query_range(const BoundingBox& mbr, int& result_count, int& node_travelled)
