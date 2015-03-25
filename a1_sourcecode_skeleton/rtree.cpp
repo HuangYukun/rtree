@@ -131,8 +131,15 @@ vector<RTNode*> RTree::split_node(RTNode* node){
 		}
 		vector<int>::iterator highest_low_side = max_element(low_side.begin(),low_side.end());
 		vector<int>::iterator lowest_high_side = min_element(high_side.begin(),high_side.end());
-		separation.push_back(abs(*highest_low_side - *lowest_high_side));
+
+		vector<int>::iterator lowest_low_side = min_element(low_side.begin(),low_side.end());
+		vector<int>::iterator highest_high_side = max_element(high_side.begin(),high_side.end());
+		separation.push_back(abs(*highest_low_side - *lowest_high_side)/(*highest_high_side - *lowest_low_side));
 	}
+	vector<int>::iterator biggest_standard_separation = max_element(separation.begin(),separation.end());
+	// for (int j = 0; j < node->entries[0].get_mbr().get_dim(); j++){
+	// 	separation[j] /= 
+	// }
 }
 
 void RTree::query_range(const BoundingBox& mbr, int& result_count, int& node_travelled)
