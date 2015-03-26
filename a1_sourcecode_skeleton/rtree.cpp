@@ -42,12 +42,8 @@ bool RTree::insert(const vector<int>& coordinate, int rid)
 	//can be done as first making a query
 	//start of insert
 	RTNode * L = new RTNode(0, coordinate.size());
-		cout <<"L  " << L->entry_num <<endl;
 	L = choose_leaf(coordinate, root);
-		cout <<"L af " << L->entry_num <<endl;
-		cout <<"L af " << L->size <<endl;
-		cout <<"L af " << L->level <<endl;
-	RTNode * LL;
+	RTNode * LL = NULL;
 	BoundingBox bb = BoundingBox(coordinate, coordinate);
 	Entry entry_to_insert = Entry(bb, rid);
 	if (L->entry_num < L->size){
@@ -55,52 +51,26 @@ bool RTree::insert(const vector<int>& coordinate, int rid)
 		L->entry_num++;
 	}
 	else{
-		cout <<"to split " << L->entry_num <<endl;
 		vector<RTNode*> splitted_nodes = split_node(L, entry_to_insert);
-		cout << "Why die1" <<endl;
 		L = splitted_nodes.front();
-		cout << "split size 1" << L->entry_num <<endl;
 		LL = splitted_nodes.back();
-		cout << "split size 2" << LL->entry_num <<endl;
 	}
-	cout << "Why die2" <<endl;
 	vector<RTNode*> roots = adjust_tree(L, LL);
-	cout << "Why die3" <<endl;
 
-	if (roots.back()==NULL){
-		cout << "roots 2 is null" <<endl;
-	}
-	else{
-		cout << "new roots 2 " << roots.back()->entry_num <<endl;
-	}
-	cout << "5" << endl;
 	if (roots.back()!=NULL){
 		//create a new root with two entries pointing to L&LL
-		RTNode* new_root = new RTNode(L->level+1, L->size);
-		L->parent = new_root;
-		LL->parent = new_root;
+		RTNode* new_root = new RTNode(roots.back()->level+1, roots.back()->size);
+		roots.front()->parent = new_root;
+		roots.back()->parent = new_root;
 		new_root->entries[0] = Entry();
-		new_root->entries[0].set_mbr(get_mbr(L->entries, L->entry_num));
-		new_root->entries[0].set_ptr(L);
+		new_root->entries[0].set_mbr(get_mbr(roots.front()->entries, roots.front()->entry_num));
+		new_root->entries[0].set_ptr(roots.front());
 		new_root->entries[1] = Entry();
-		new_root->entries[1].set_mbr(get_mbr(LL->entries, LL->entry_num));
-		new_root->entries[1].set_ptr(LL);
+		new_root->entries[1].set_mbr(get_mbr(roots.back()->entries, roots.back()->entry_num));
+		new_root->entries[1].set_ptr(roots.back());
 		root = new_root;
 		root->entry_num = 2;
 	}
-	//print parent
-	if (root->parent==NULL){
-		cout << "root parent is NULL" <<endl;
-	}
-	for(int i = 0; i < root->entry_num; i++){
-		if(root->entries[i].get_ptr()!=NULL){
-			cout << "got a son" << endl;
-			if(root->entries[i].get_ptr()->parent==NULL){
-				cout << i <<"'s parent is NULL" <<endl;
-			}
-		}
-	}
-
 
 	return true;
 
@@ -112,7 +82,6 @@ RTNode * RTree::choose_leaf(const vector<int>& coordinate, RTNode* N)//recursive
 	// RTNode *N = this->root;
 	if (N->level==0)//if N is a leaf
 	{
-		cout << "return me " << N->entry_num <<endl;
 		return N;
 	}
 	else
@@ -154,22 +123,24 @@ RTNode * RTree::choose_leaf(const vector<int>& coordinate, RTNode* N)//recursive
 vector<RTNode*> RTree::adjust_tree(RTNode* L, RTNode* LL) //LL can be NULL
 {
 	//assume the count starts from 1
-	// if (count == 1){
-		RTNode* N = L;
-		RTNode* NN = LL; //check NULL
-	// }
-	// count++;// the above part will not be 
+	// RTNode* N = new RTNode(L->level, L->size);
+	RTNode* N = L;
+	RTNode* NN = LL; //check NULL
 	//check N is the root
 	//parent pointer need taken care
 	if (N->parent==NULL){
 		vector<RTNode*> roots;
 		roots.push_back(N);
+		//some problems with this
 		roots.push_back(NN);
+			// cout << "N is " << N->level <<endl;
+			// cout << "NN is " << NN->level <<endl;
 		return roots;
 	}
 	else
 	{
-		RTNode* P = N->parent;
+		RTNode* P = new RTNode(N->level+1, N->size);
+		P = N->parent;
 		for (int i = 0; i < P->entry_num; i++){
 			if(P->entries[i].get_ptr()==N){
 				for (int j = 0; j < N->entry_num; j++){
@@ -187,19 +158,20 @@ vector<RTNode*> RTree::adjust_tree(RTNode* L, RTNode* LL) //LL can be NULL
 			enn.set_mbr(bnn);
 			if (P->entry_num < P->size){
 				//add enn to P with room
-				P->entries[P->entry_num] = enn; //may contain error
+				P->entries[P->entry_num] = Entry();
+				P->entries[P->entry_num] = enn;
 				P->entry_num++;
 				N = P;
 				return adjust_tree(N, NULL);
+
 			}
 			else{
 				//AT4
-				//firstly overflow P, then split it
-				P->entries[P->entry_num] = enn;
-				P->entry_num++;
 				vector<RTNode*> Ps = split_node(P, enn);
 				N = Ps.front();
 				NN = Ps.back();
+					// cout << "N " << N->level <<endl;
+					// cout << "NN " << NN->level <<endl;
 				return adjust_tree(N, NN);
 			}
 		}
