@@ -32,5 +32,5 @@ class RTree {
 		RTNode* root;
 		RTNode* choose_leaf(const vector<int>& coordinate, RTNode* node);
 		vector<RTNode*> adjust_tree(RTNode* L, RTNode* LL);
-		vector<RTNode*> split_node(RTNode* node);
+		vector<RTNode*> split_node(RTNode* node, Entry e);
 };

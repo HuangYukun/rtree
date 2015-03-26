@@ -18,8 +18,6 @@ RTree::RTree(int entry_num, int dim)
 	max_entry_num = entry_num;
 	dimension = dim;//by default
 	root = new RTNode(0, entry_num);
-	cout << "entry_num " << entry_num << endl;
-	cout << "entry_num " << root->size << endl;
 }
 
 RTree::~RTree()
@@ -43,23 +41,16 @@ bool RTree::insert(const vector<int>& coordinate, int rid)
 	//need to handle duplicated case
 	//can be done as first making a query
 	//start of insert
-		cout << root->entry_num << endl;
-		cout << "root size " << this->root->size << endl;
 	RTNode * L = choose_leaf(coordinate, root);
-		cout << "1" << endl;
 	RTNode * LL;
 	BoundingBox bb = BoundingBox(coordinate, coordinate);
-		cout << "2" << endl;
 	Entry entry_to_insert = Entry(bb, rid);
-		cout << entry_to_insert.get_rid() << endl;
 	if (L->entry_num < L->size){
-			cout << L->entry_num << "vs " << L->size <<endl;
 		L->entries[L->entry_num] = Entry(bb, rid);
 		L->entry_num++;
-			cout << "3" << endl;
 	}
 	else{
-		vector<RTNode*> splitted_nodes = split_node(L);
+		vector<RTNode*> splitted_nodes = split_node(L, entry_to_insert);
 		L = splitted_nodes.front();
 		LL = splitted_nodes.back();
 		cout << "4" << endl;
@@ -193,7 +184,8 @@ vector<RTNode*> RTree::adjust_tree(RTNode* L, RTNode* LL) //LL can be NULL
 }
 
 //linear-cost algorithm
-vector<RTNode*> RTree::split_node(RTNode* node){
+//change it to take in new entry e
+vector<RTNode*> RTree::split_node(RTNode* node, Entry e){
 	vector<double> separation;
 	for (int j = 0; j < node->entries[0].get_mbr().get_dim(); j++){
 		vector<int> low_side;
@@ -210,8 +202,10 @@ vector<RTNode*> RTree::split_node(RTNode* node){
 		// type casting, to double
 		separation.push_back(abs(*highest_low_side - *lowest_high_side)/double((*highest_high_side - *lowest_low_side)));
 	}
+		cout << "s_n1" << endl;
 	vector<double>::iterator biggest_normalized_separation = max_element(separation.begin(),separation.end());
 	//back trace to the two entries
+		cout << "s_n2 "<< *biggest_normalized_separation << endl;
 	int dimension_index = biggest_normalized_separation - separation.begin();
 	int highest_low_side = node->entries[0].get_mbr().get_lowestValue_at(dimension_index);
 	int hls_entry_index = 0;
@@ -229,15 +223,27 @@ vector<RTNode*> RTree::split_node(RTNode* node){
 			lhs_entry_index = i;
 		}
 	}
+		cout << "s_n3" << endl;
 	vector<RTNode*> Nodes;
 	//modify constructor
 	RTNode * LL = new RTNode(node->level, node->size);
+	LL->entries[0] = Entry();
 	LL->entries[0] = node->entries[lhs_entry_index];
 	LL->entry_num++;
+		cout << "s_n4" << endl;
+		cout << "hls_entry_index "<< hls_entry_index <<endl;
 	for (int i = lhs_entry_index; i < node->size; i++){
+			cout << "i " << i << endl;
 		node->entries[i] = node->entries[i+1];
+			cout << "for loop" << node->entries[i].get_rid() <<endl;
+		// new_root->entries[0] = Entry();
+		// new_root->entries[0].set_mbr(get_mbr(L->entries, L->entry_num));
+		// new_root->entries[0].set_ptr(L);
+		cout << "s_n5" << endl;
 	}
+		cout << "entry_num " << node->entry_num <<endl;
 	node->entry_num--;
+		cout << "entry_num " << node->entry_num <<endl;
 	Nodes.push_back(node);
 	Nodes.push_back(LL);
 	return Nodes;

@@ -51,6 +51,8 @@ RTNode::RTNode(int lev, int s)
 {
 	entry_num = 0;
 	entries = new Entry[s];
+	//change it to s+1 for the sake of convenience
+	// entries = new Entry[s+1];
 	level = lev;
 	size = s;
 }
