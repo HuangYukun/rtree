@@ -39,6 +39,10 @@ bool RTree::insert(const vector<int>& coordinate, int rid)
 	****/
 
 	//need to handle duplicated case
+	Entry qpEmptyEntry;
+	if (query_point(coordinate, qpEmptyEntry)==true){
+		return false;
+	}
 	//can be done as first making a query
 	//start of insert
 	RTNode * L = new RTNode(0, coordinate.size());
@@ -273,6 +277,12 @@ void RTree::query_range(const BoundingBox& mbr, int& result_count, int& node_tra
 	/***
 	ADD YOUR CODE HERE
 	****/
+	RTNode * startNode = root;
+	for (int i = 0; i < startNode->entry_num; i++){
+		if (startNode->entries[i].get_mbr().is_intersected(mbr)==true){
+			
+		}
+	}
 }
 
 
@@ -286,6 +296,20 @@ bool RTree::query_point(const vector<int>& coordinate, Entry& result)
 	/***
 	ADD YOUR CODE HERE
 	****/
+
+	RTNode * leaf = choose_leaf(coordinate, root);
+	BoundingBox bb = BoundingBox(coordinate, coordinate);
+	int index = -1;
+	for (int i = 0; i < leaf->entry_num; i++){
+		if (leaf->entries[i].get_mbr().is_equal(bb) == true){
+			index = i;
+		}
+	}
+	if (index >= 0 ){
+		result = leaf->entries[index];
+		return true;
+	}
+	return false;
 }
 
 
