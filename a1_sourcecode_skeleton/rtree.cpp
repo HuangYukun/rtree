@@ -41,7 +41,12 @@ bool RTree::insert(const vector<int>& coordinate, int rid)
 	//need to handle duplicated case
 	//can be done as first making a query
 	//start of insert
-	RTNode * L = choose_leaf(coordinate, root);
+	RTNode * L = new RTNode(0, coordinate.size());
+		cout <<"L  " << L->entry_num <<endl;
+	L = choose_leaf(coordinate, root);
+		cout <<"L af " << L->entry_num <<endl;
+		cout <<"L af " << L->size <<endl;
+		cout <<"L af " << L->level <<endl;
 	RTNode * LL;
 	BoundingBox bb = BoundingBox(coordinate, coordinate);
 	Entry entry_to_insert = Entry(bb, rid);
@@ -50,28 +55,52 @@ bool RTree::insert(const vector<int>& coordinate, int rid)
 		L->entry_num++;
 	}
 	else{
+		cout <<"to split " << L->entry_num <<endl;
 		vector<RTNode*> splitted_nodes = split_node(L, entry_to_insert);
+		cout << "Why die1" <<endl;
 		L = splitted_nodes.front();
+		cout << "split size 1" << L->entry_num <<endl;
 		LL = splitted_nodes.back();
-		cout << "4" << endl;
+		cout << "split size 2" << LL->entry_num <<endl;
 	}
-	cout << "hello" <<endl;
+	cout << "Why die2" <<endl;
 	vector<RTNode*> roots = adjust_tree(L, LL);
+	cout << "Why die3" <<endl;
+
+	if (roots.back()==NULL){
+		cout << "roots 2 is null" <<endl;
+	}
+	else{
+		cout << "new roots 2 " << roots.back()->entry_num <<endl;
+	}
 	cout << "5" << endl;
 	if (roots.back()!=NULL){
 		//create a new root with two entries pointing to L&LL
 		RTNode* new_root = new RTNode(L->level+1, L->size);
+		L->parent = new_root;
+		LL->parent = new_root;
 		new_root->entries[0] = Entry();
 		new_root->entries[0].set_mbr(get_mbr(L->entries, L->entry_num));
 		new_root->entries[0].set_ptr(L);
 		new_root->entries[1] = Entry();
 		new_root->entries[1].set_mbr(get_mbr(LL->entries, LL->entry_num));
 		new_root->entries[1].set_ptr(LL);
-		L->level++;
-		LL->level++;
 		root = new_root;
+		root->entry_num = 2;
 	}
-	cout << "6" << endl;
+	//print parent
+	if (root->parent==NULL){
+		cout << "root parent is NULL" <<endl;
+	}
+	for(int i = 0; i < root->entry_num; i++){
+		if(root->entries[i].get_ptr()!=NULL){
+			cout << "got a son" << endl;
+			if(root->entries[i].get_ptr()->parent==NULL){
+				cout << i <<"'s parent is NULL" <<endl;
+			}
+		}
+	}
+
 
 	return true;
 
@@ -81,8 +110,9 @@ bool RTree::insert(const vector<int>& coordinate, int rid)
 RTNode * RTree::choose_leaf(const vector<int>& coordinate, RTNode* N)//recursive call
 {
 	// RTNode *N = this->root;
-	if (N->entry_num<2||(N->entries[0]).get_ptr()==NULL)//if N is a leaf
+	if (N->level==0)//if N is a leaf
 	{
+		cout << "return me " << N->entry_num <<endl;
 		return N;
 	}
 	else
@@ -114,8 +144,8 @@ RTNode * RTree::choose_leaf(const vector<int>& coordinate, RTNode* N)//recursive
 				min_index[*it] = min_index[*(it-1)];
 			}
 		}
-		//print min_index to debug
-		choose_leaf(coordinate, (N->entries[min_index.back()]).get_ptr());
+		//the return cost me an hour
+		return choose_leaf(coordinate, (N->entries[min_index.back()]).get_ptr());
 	}
 
 }
@@ -167,7 +197,7 @@ vector<RTNode*> RTree::adjust_tree(RTNode* L, RTNode* LL) //LL can be NULL
 				//firstly overflow P, then split it
 				P->entries[P->entry_num] = enn;
 				P->entry_num++;
-				vector<RTNode*> Ps = split_node(P);
+				vector<RTNode*> Ps = split_node(P, enn);
 				N = Ps.front();
 				NN = Ps.back();
 				return adjust_tree(N, NN);
@@ -185,7 +215,7 @@ vector<RTNode*> RTree::adjust_tree(RTNode* L, RTNode* LL) //LL can be NULL
 
 //linear-cost algorithm
 //change it to take in new entry e
-vector<RTNode*> RTree::split_node(RTNode* node, Entry e){
+vector<RTNode*> RTree::split_node(RTNode* node, Entry entry_to_insert){
 	vector<double> separation;
 	for (int j = 0; j < node->entries[0].get_mbr().get_dim(); j++){
 		vector<int> low_side;
@@ -202,10 +232,8 @@ vector<RTNode*> RTree::split_node(RTNode* node, Entry e){
 		// type casting, to double
 		separation.push_back(abs(*highest_low_side - *lowest_high_side)/double((*highest_high_side - *lowest_low_side)));
 	}
-		cout << "s_n1" << endl;
 	vector<double>::iterator biggest_normalized_separation = max_element(separation.begin(),separation.end());
 	//back trace to the two entries
-		cout << "s_n2 "<< *biggest_normalized_separation << endl;
 	int dimension_index = biggest_normalized_separation - separation.begin();
 	int highest_low_side = node->entries[0].get_mbr().get_lowestValue_at(dimension_index);
 	int hls_entry_index = 0;
@@ -223,27 +251,41 @@ vector<RTNode*> RTree::split_node(RTNode* node, Entry e){
 			lhs_entry_index = i;
 		}
 	}
-		cout << "s_n3" << endl;
 	vector<RTNode*> Nodes;
 	//modify constructor
+	//new Node to carry splitted entries
 	RTNode * LL = new RTNode(node->level, node->size);
 	LL->entries[0] = Entry();
 	LL->entries[0] = node->entries[lhs_entry_index];
 	LL->entry_num++;
-		cout << "s_n4" << endl;
-		cout << "hls_entry_index "<< hls_entry_index <<endl;
-	for (int i = lhs_entry_index; i < node->size; i++){
-			cout << "i " << i << endl;
+	//rearrange the entries sequence
+	for (int i = lhs_entry_index; i < node->size-1; i++){
 		node->entries[i] = node->entries[i+1];
-			cout << "for loop" << node->entries[i].get_rid() <<endl;
-		// new_root->entries[0] = Entry();
-		// new_root->entries[0].set_mbr(get_mbr(L->entries, L->entry_num));
-		// new_root->entries[0].set_ptr(L);
-		cout << "s_n5" << endl;
 	}
-		cout << "entry_num " << node->entry_num <<endl;
 	node->entry_num--;
-		cout << "entry_num " << node->entry_num <<endl;
+
+	//check where to input the new node
+	//node
+	int area_difference1;
+	int area_difference2;
+	BoundingBox bb1 = get_mbr(node->entries, node->entry_num);
+	bb1.group_with(entry_to_insert.get_mbr());
+	BoundingBox bb2 = get_mbr(LL->entries, LL->entry_num);
+	bb2.group_with(entry_to_insert.get_mbr());
+	area_difference1 = abs(get_mbr(node->entries, node->entry_num).get_area() - bb1.get_area());
+	area_difference2 = abs(get_mbr(LL->entries, LL->entry_num).get_area() - bb2.get_area());
+	if (area_difference1 < area_difference2){
+		//insert into node
+		node->entries[node->entry_num] = Entry();
+		node->entries[node->entry_num] = entry_to_insert;
+		node->entry_num++;
+	}
+	else{
+		//insert into LL
+		LL->entries[LL->entry_num] = Entry();
+		LL->entries[LL->entry_num] = entry_to_insert;
+		LL->entry_num++;
+	}
 	Nodes.push_back(node);
 	Nodes.push_back(LL);
 	return Nodes;
