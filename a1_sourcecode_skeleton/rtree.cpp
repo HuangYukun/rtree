@@ -277,10 +277,42 @@ void RTree::query_range(const BoundingBox& mbr, int& result_count, int& node_tra
 	/***
 	ADD YOUR CODE HERE
 	****/
-	RTNode * startNode = root;
-	for (int i = 0; i < startNode->entry_num; i++){
-		if (startNode->entries[i].get_mbr().is_intersected(mbr)==true){
-			
+	query_range_helper(mbr, result_count, node_travelled, root);
+	// RTNode * startNode = root;
+	// for (int i = 0; i < startNode->entry_num; i++){
+	// 	if (startNode->entries[i].get_mbr().is_intersected(mbr)==true){
+
+	// 	}
+	// }
+	// int level = root->level;
+
+	// while(level >= 0){
+
+	// }
+}
+
+void RTree::query_range_helper(const BoundingBox& mbr, int& result_count, int& node_travelled, RTNode* node)
+{
+	node_travelled++;
+	if (node->level!=0){
+		for (int i = 0; i < node->entry_num; i++){
+			if (node->entries[i].get_mbr().is_intersected(mbr)==true){
+				query_range_helper(mbr, result_count, node_travelled, node->entries[i].get_ptr());
+
+			}
+		}
+	}
+	else{
+		for (int i = 0; i < node->entry_num; i++){
+			int everydimensionincludecounter = 0;
+			for (int j = 0; j <node->entries[0].get_mbr().get_dim(); j++){
+				if (node->entries[i].get_mbr().get_lowestValue_at(j) >= mbr.get_lowestValue_at(j) && node->entries[i].get_mbr().get_highestValue_at(j) <= mbr.get_highestValue_at(j)){
+					everydimensionincludecounter++;
+				}
+			}
+			if (everydimensionincludecounter==node->entries[0].get_mbr().get_dim()){
+				result_count++;
+			}
 		}
 	}
 }

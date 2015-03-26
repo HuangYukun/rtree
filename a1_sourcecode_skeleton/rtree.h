@@ -33,4 +33,5 @@ class RTree {
 		RTNode* choose_leaf(const vector<int>& coordinate, RTNode* node);
 		vector<RTNode*> adjust_tree(RTNode* L, RTNode* LL);
 		vector<RTNode*> split_node(RTNode* node, Entry entry_to_insert);
+		void query_range_helper(const BoundingBox& mbr, int& result_count, int& node_travelled, RTNode* node);
 };
