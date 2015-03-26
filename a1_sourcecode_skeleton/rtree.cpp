@@ -38,6 +38,12 @@ bool RTree::insert(const vector<int>& coordinate, int rid)
 	ADD YOUR CODE HERE
 	****/
 
+	//start of insert
+	RTNode * L = choose_leaf(coordinate, root);
+	if (L->entry_num < L->size){
+
+	}
+
 }
 
 //when calling this function we should pass in the root node
@@ -53,6 +59,7 @@ RTNode * RTree::choose_leaf(const vector<int>& coordinate, RTNode* N)//recursive
 		vector<int> enlargement;
 		for (int i = 0; i < N->entry_num; i++){
 			BoundingBox bb = BoundingBox((N->entries[i]).get_mbr());
+			//basically the entries are points with not range
 			BoundingBox box_new = BoundingBox(coordinate,	coordinate);
 			bb.group_with(box_new);
 			enlargement.push_back(bb.get_area() - (N->entries[i]).get_mbr().get_area());
@@ -82,11 +89,16 @@ RTNode * RTree::choose_leaf(const vector<int>& coordinate, RTNode* N)//recursive
 
 }
 
-void RTree::adjust_tree(RTNode* L, RTNode* LL)
+void RTree::adjust_tree(RTNode* L, RTNode* LL) //LL can be NULL
 {
-	RTNode* N = L;
-	RTNode* NN = LL;
+	//assume the count starts from 1
+	// if (count == 1){
+		RTNode* N = L;
+		RTNode* NN = LL; //check NULL
+	// }
+	// count++;// the above part will not be 
 	//check N is the root
+	//parent pointer need taken care
 	if (N->parent==NULL){
 		return;
 	}
@@ -102,15 +114,18 @@ void RTree::adjust_tree(RTNode* L, RTNode* LL)
 				}
 			}
 		}
+		// AT4 + AT5, not a MUST
 		if (NN!=NULL){
 			Entry enn = Entry();
 			enn.set_ptr(NN);
 			BoundingBox bnn = get_mbr(NN->entries, NN->entry_num);
 			enn.set_mbr(bnn);
 			if (P->entry_num < P->size){
-				//add enn to P
-				P->entries[P->entry_num] = enn;
+				//add enn to P with room
+				P->entries[P->entry_num] = enn; //may contain error
 				P->entry_num++;
+				N = P;
+				return adjust_tree(N, NULL);
 			}
 			else{
 				//AT4
@@ -120,8 +135,16 @@ void RTree::adjust_tree(RTNode* L, RTNode* LL)
 				vector<RTNode*> Ps = split_node(P);
 				N = Ps.front();
 				NN = Ps.back();
+				return adjust_tree(N, NN);
 			}
 		}
+		//no NN is passed in
+		else
+		{
+			N = P;
+			return adjust_tree(N, NULL);
+		}
+
 	}
 }
 
