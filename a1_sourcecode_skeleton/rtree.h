@@ -31,6 +31,6 @@ class RTree {
 		int dimension;
 		RTNode* root;
 		RTNode* choose_leaf(const vector<int>& coordinate, RTNode* node);
-		void adjust_tree(RTNode* L, RTNode* LL);
+		vector<RTNode*> adjust_tree(RTNode* L, RTNode* LL);
 		vector<RTNode*> split_node(RTNode* node);
 };

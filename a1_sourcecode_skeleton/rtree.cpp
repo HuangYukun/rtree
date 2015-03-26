@@ -18,6 +18,8 @@ RTree::RTree(int entry_num, int dim)
 	max_entry_num = entry_num;
 	dimension = dim;//by default
 	root = new RTNode(0, entry_num);
+	cout << "entry_num " << entry_num << endl;
+	cout << "entry_num " << root->size << endl;
 }
 
 RTree::~RTree()
@@ -38,11 +40,49 @@ bool RTree::insert(const vector<int>& coordinate, int rid)
 	ADD YOUR CODE HERE
 	****/
 
+	//need to handle duplicated case
+	//can be done as first making a query
 	//start of insert
+		cout << root->entry_num << endl;
+		cout << "root size " << this->root->size << endl;
 	RTNode * L = choose_leaf(coordinate, root);
+		cout << "1" << endl;
+	RTNode * LL;
+	BoundingBox bb = BoundingBox(coordinate, coordinate);
+		cout << "2" << endl;
+	Entry entry_to_insert = Entry(bb, rid);
+		cout << entry_to_insert.get_rid() << endl;
 	if (L->entry_num < L->size){
-
+			cout << L->entry_num << "vs " << L->size <<endl;
+		L->entries[L->entry_num] = Entry(bb, rid);
+		L->entry_num++;
+			cout << "3" << endl;
 	}
+	else{
+		vector<RTNode*> splitted_nodes = split_node(L);
+		L = splitted_nodes.front();
+		LL = splitted_nodes.back();
+		cout << "4" << endl;
+	}
+	cout << "hello" <<endl;
+	vector<RTNode*> roots = adjust_tree(L, LL);
+	cout << "5" << endl;
+	if (roots.back()!=NULL){
+		//create a new root with two entries pointing to L&LL
+		RTNode* new_root = new RTNode(L->level+1, L->size);
+		new_root->entries[0] = Entry();
+		new_root->entries[0].set_mbr(get_mbr(L->entries, L->entry_num));
+		new_root->entries[0].set_ptr(L);
+		new_root->entries[1] = Entry();
+		new_root->entries[1].set_mbr(get_mbr(LL->entries, LL->entry_num));
+		new_root->entries[1].set_ptr(LL);
+		L->level++;
+		LL->level++;
+		root = new_root;
+	}
+	cout << "6" << endl;
+
+	return true;
 
 }
 
@@ -89,7 +129,8 @@ RTNode * RTree::choose_leaf(const vector<int>& coordinate, RTNode* N)//recursive
 
 }
 
-void RTree::adjust_tree(RTNode* L, RTNode* LL) //LL can be NULL
+//return the single root or splitted roots
+vector<RTNode*> RTree::adjust_tree(RTNode* L, RTNode* LL) //LL can be NULL
 {
 	//assume the count starts from 1
 	// if (count == 1){
@@ -100,7 +141,10 @@ void RTree::adjust_tree(RTNode* L, RTNode* LL) //LL can be NULL
 	//check N is the root
 	//parent pointer need taken care
 	if (N->parent==NULL){
-		return;
+		vector<RTNode*> roots;
+		roots.push_back(N);
+		roots.push_back(NN);
+		return roots;
 	}
 	else
 	{
@@ -150,7 +194,7 @@ void RTree::adjust_tree(RTNode* L, RTNode* LL) //LL can be NULL
 
 //linear-cost algorithm
 vector<RTNode*> RTree::split_node(RTNode* node){
-	vector<int> separation;
+	vector<double> separation;
 	for (int j = 0; j < node->entries[0].get_mbr().get_dim(); j++){
 		vector<int> low_side;
 		vector<int> high_side;
@@ -163,9 +207,10 @@ vector<RTNode*> RTree::split_node(RTNode* node){
 
 		vector<int>::iterator lowest_low_side = min_element(low_side.begin(),low_side.end());
 		vector<int>::iterator highest_high_side = max_element(high_side.begin(),high_side.end());
-		separation.push_back(abs(*highest_low_side - *lowest_high_side)/(*highest_high_side - *lowest_low_side));
+		// type casting, to double
+		separation.push_back(abs(*highest_low_side - *lowest_high_side)/double((*highest_high_side - *lowest_low_side)));
 	}
-	vector<int>::iterator biggest_normalized_separation = max_element(separation.begin(),separation.end());
+	vector<double>::iterator biggest_normalized_separation = max_element(separation.begin(),separation.end());
 	//back trace to the two entries
 	int dimension_index = biggest_normalized_separation - separation.begin();
 	int highest_low_side = node->entries[0].get_mbr().get_lowestValue_at(dimension_index);

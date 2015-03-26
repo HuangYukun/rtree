@@ -29,6 +29,7 @@ class RTNode {
 		RTNode(const RTNode& other);
 		RTNode& operator=(const RTNode& other);
 		~RTNode();
+		// int get_size() const;
 
 	public:
 		int entry_num;

@@ -85,3 +85,8 @@ RTNode::~RTNode()
 	delete []entries;
 	entries = NULL;
 }
+
+// int RTNode::get_size()
+// {
+// 	return this->size;
+// }
